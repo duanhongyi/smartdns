@@ -6,6 +6,7 @@ __version__='1.0.1.1'
 import sys, os
 import signal
 import time
+import threading
 from os.path import isfile
 sys.path.append('../lib')
 import yaml
@@ -28,6 +29,7 @@ from zope.interface import implements
 sys.path.append('ippool.py')
 sys.path.append('dnsserver.py')
 import ippool, dnsserver
+from icmp import ping
 
 def loadconfig(path):
 	if not isfile(path):
@@ -61,6 +63,23 @@ def get_local_ip():
 		socket.inet_ntoa(namestr[i+20:i+24]))
 		for i in range(0, outbytes, struct_size)]
 
+def prepare_ip_blacklist(amapping_blacklist, ip_list):
+    def task(amapping_blacklist, ip_list):
+        while True:
+            for ip in ip_list:
+                try:
+                    delay  =  ping(ip, 9)
+                except socket.gaierror as e:
+                    delay = None
+                if delay == None and ip not in amapping_blacklist:
+                    amapping_blacklist.add(ip)
+                if delay != None and ip in amapping_blacklist:
+                    amapping_blacklist.remove(ip)
+    thread = threading.Thread(target=task, args=(amapping_blacklist, ip_list)) 
+    thread.setDaemon(True)
+    thread.start()
+
+
 def prepare_run(run_env):
 	#load main config
 	logger.info('start to load conf/sdns.yaml ......')
@@ -75,7 +94,13 @@ def prepare_run(run_env):
 	Amapping = loadconfig(conf['AFILE'])
 	NSmapping = loadconfig(conf['NSFILE'])
 	SOAmapping = loadconfig(conf['SOAFILE'])
-
+        AmappingBlacklist = set()
+        ip_list = set()
+        for item in Amapping.values():
+            for key, value in item.items():
+                if key == 'ttl': continue
+                ip_list.update(value.split(' '))
+        prepare_ip_blacklist(AmappingBlacklist, ip_list) 
 	# set up a resolver that uses the mapping or a secondary nameserver
 	dnsforward = []
 	for i in conf['dnsforward_ip']:
@@ -83,7 +108,8 @@ def prepare_run(run_env):
 
 	for ifc,ip in get_local_ip():
 		# create the protocols
-		SmartResolver = dnsserver.MapResolver(Finder, Amapping, NSmapping, SOAmapping, servers=dnsforward)
+		SmartResolver = dnsserver.MapResolver(
+                    Finder, Amapping, AmappingBlacklist, NSmapping, SOAmapping, servers=dnsforward)
 		f = dnsserver.SmartDNSFactory(caches=[cache.CacheResolver()], clients=[SmartResolver])
 		p = dns.DNSDatagramProtocol(f)
 		f.noisy = p.noisy = False
