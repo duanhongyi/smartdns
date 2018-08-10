@@ -1,6 +1,5 @@
 [Unit]
-Description=parkingcam-ms daemon
-Wants=res.service
+Description=smartdns daemon
 After=network.target
  
 [Service]
