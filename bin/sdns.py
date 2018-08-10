@@ -116,19 +116,13 @@ def prepare_run(run_env):
 		run_env['tcp'].append([f,ip])
 		run_env['udp'].append([p,ip])
 
-def run_server(run_env):
-	for e in run_env['tcp']:
-		run_env['readers'].append(reactor.listenTCP(53, e[0], interface=e[1]))
-	for e in run_env['udp']:
-		run_env['readers'].append(reactor.listenUDP(53, e[0], interface=e[1]))
-
-# sets uy the application
-application = service.Application('sdns', 0, 0)
-
-env = {'udp':[], 'tcp':[], 'readers':[], 'closed':0, 'updated': False, 'finder':None}
-prepare_run(env)
-run_server(env)
 
 # run it through twistd!
 if __name__ == '__main__':
-    print "Usage: twistd -y %s" % sys.argv[0]
+    run_env = {'udp':[], 'tcp':[], 'closed':0, 'updated': False, 'finder':None}
+    prepare_run(run_env)
+    for e in run_env['tcp']:
+        reactor.listenTCP(53, e[0], interface=e[1])
+    for e in run_env['udp']:
+        reactor.listenUDP(53, e[0], interface=e[1])
+    reactor.run() 
