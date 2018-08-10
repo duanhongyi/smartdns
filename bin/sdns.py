@@ -76,6 +76,7 @@ def prepare_ip_blacklist(amapping_blacklist, ip_list):
                     amapping_blacklist.add(ip)
                 if delay != None and ip in amapping_blacklist:
                     amapping_blacklist.remove(ip)
+            time.sleep(1)
     thread = threading.Thread(target=task, args=(amapping_blacklist, ip_list)) 
     thread.setDaemon(True)
     thread.start()
