@@ -31,6 +31,7 @@ sys.path.append('dnsserver.py')
 import ippool, dnsserver
 from icmp import ping
 
+
 def loadconfig(path):
 	if not isfile(path):
 		print "[FATAL] can't find config file %s !" % path
@@ -116,6 +117,22 @@ def prepare_run(run_env):
 		run_env['tcp'].append([f,ip])
 		run_env['udp'].append([p,ip])
 
+def sdns_write_pid(pid_file):
+    pid = str(os.getpid())
+    with open(pid_file, 'w') as f:
+        f.write(pid)
+
+
+def sdns_kill_pid(pid_file):
+    if not os.path.exists(pid_file): return
+    try:
+        with open(pid_file, 'r') as f:
+            pid = int(f.read())
+        a = os.kill(pid, signal.SIGKILL)
+        print 'PID  %s has been killed, return code:%s' % (pid, a)
+    except OSError as e:
+        logger.info(e)
+        print 'PID was not discovered.'
 
 # run it through twistd!
 if __name__ == '__main__':
@@ -124,27 +141,12 @@ if __name__ == '__main__':
         '..',
         'sdns.pid',
     )
-    def write_pid():  
-        pid = str(os.getpid())  
-        with open(pid_file, 'w') as f:
-            f.write(pid)  
-    def kill_pid():
-        if not os.path.exists(pid_file): return
-        try:
-            with open(pid_file, 'r') as f:
-                pid = int(f.read())
-            a = os.kill(pid, signal.SIGKILL)
-            print 'PID  %s has been killed, return code:%s' % (pid, a)
-        except OSError as e:
-            logger.info(e)
-            print 'PID was not discovered.'
-
-    kill_pid()
+    sdns_kill_pid(pid_file)
     run_env = {'udp':[], 'tcp':[], 'closed':0, 'updated': False, 'finder':None}
     prepare_run(run_env)
     for e in run_env['tcp']:
         reactor.listenTCP(53, e[0], interface=e[1])
     for e in run_env['udp']:
         reactor.listenUDP(53, e[0], interface=e[1])
-    write_pid()
+    sdns_write_pid(pid_file)
     reactor.run() 
