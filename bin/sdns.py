@@ -119,10 +119,32 @@ def prepare_run(run_env):
 
 # run it through twistd!
 if __name__ == '__main__':
+    pid_file = os.path.join(
+        os.path.abspath(os.path.dirname(__file__)),
+        '..',
+        'sdns.pid',
+    )
+    def write_pid():  
+        pid = str(os.getpid())  
+        with open(pid_file, 'w') as f:
+            f.write(pid)  
+    def kill_pid():
+        if not os.path.exists(pid_file): return
+        try:
+            with open(pid_file, 'r') as f:
+                pid = int(f.read())
+            a = os.kill(pid, signal.SIGKILL)
+            print 'PID  %s has been killed, return code:%s' % (pid, a)
+        except OSError as e:
+            logger.info(e)
+            print 'PID was not discovered.'
+
+    kill_pid()
     run_env = {'udp':[], 'tcp':[], 'closed':0, 'updated': False, 'finder':None}
     prepare_run(run_env)
     for e in run_env['tcp']:
         reactor.listenTCP(53, e[0], interface=e[1])
     for e in run_env['udp']:
         reactor.listenUDP(53, e[0], interface=e[1])
+    write_pid()
     reactor.run() 
