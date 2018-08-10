@@ -5,9 +5,9 @@ After=network.target
 [Service]
 User=root
 Group=root
-WorkingDirectory={smartdns_path}
+WorkingDirectory=/usr/local/smartdns/script
 ExecStart=/bin/sh run_dns.sh
-ExecReload=/bin/kill -s HUP $MAINPID
+ExecReload=/bin/sh reload_dns.sh
 ExecStop=/bin/kill -s TERM $MAINPID
 EnvironmentFile=/etc/environment
 PrivateTmp=true
