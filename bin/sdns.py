@@ -117,13 +117,13 @@ def prepare_run(run_env):
 		run_env['tcp'].append([f,ip])
 		run_env['udp'].append([p,ip])
 
-def sdns_write_pid(pid_file):
+def write_pid(pid_file):
     pid = str(os.getpid())
     with open(pid_file, 'w') as f:
         f.write(pid)
 
 
-def sdns_kill_pid(pid_file):
+def kill_pid(pid_file):
     if not os.path.exists(pid_file): return
     try:
         with open(pid_file, 'r') as f:
@@ -141,12 +141,12 @@ if __name__ == '__main__':
         '..',
         'sdns.pid',
     )
-    sdns_kill_pid(pid_file)
+    kill_pid(pid_file)
     run_env = {'udp':[], 'tcp':[], 'closed':0, 'updated': False, 'finder':None}
     prepare_run(run_env)
     for e in run_env['tcp']:
         reactor.listenTCP(53, e[0], interface=e[1])
     for e in run_env['udp']:
         reactor.listenUDP(53, e[0], interface=e[1])
-    sdns_write_pid(pid_file)
+    write_pid(pid_file)
     reactor.run() 
