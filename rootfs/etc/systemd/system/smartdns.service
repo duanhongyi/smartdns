@@ -1,0 +1,19 @@
+[Unit]
+Description=parkingcam-ms daemon
+Wants=res.service
+After=network.target
+ 
+[Service]
+User=root
+Group=root
+WorkingDirectory={smartdns_path}
+ExecStart=/bin/sh run_dns.sh
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s TERM $MAINPID
+EnvironmentFile=/etc/environment
+PrivateTmp=true
+Restart=on-failure
+RestartSec=2s
+ 
+[Install]
+WantedBy=multi-user.target
