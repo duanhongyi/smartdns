@@ -29,6 +29,7 @@ fi
 dnsfile=`find $filepath/../../smartdns_env/lib/python*/site-packages/Twisted-12.2.0*/twisted/names -name dns.py`
 cp -f $filepath/dns_in_twisted.py $dnsfile
 
+mkdir -p $filepath/../log
 cp -rf $filepath/../rootfs/* /
 sed -i "s#{smartdns_path}#${filepath}#g" /etc/systemd/system/smartdns.service
 systemctl daemon-reload
