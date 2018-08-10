@@ -11,9 +11,6 @@ smartdns
 ## 支持的功能
 支持A、SOA、NS记录的查询，支持DNS forward功能
 
-## 
-支持A、SOA、NS记录的查询，支持DNS forward功能
-
 ## 性能
 在虚拟机2.4G CPU上能够处理1000QPS查询请求，打开debug日志后可以到800QPS。3-5台dns server组成的集群已经能够满足大部分站点的需求。
 
