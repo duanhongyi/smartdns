@@ -19,3 +19,4 @@ develop-eggs
 .project
 .pydevproject
 *.pyc
+*.pid
