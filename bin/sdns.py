@@ -64,7 +64,7 @@ def get_local_ip():
 		socket.inet_ntoa(namestr[i+20:i+24]))
 		for i in range(0, outbytes, struct_size)]
 
-def prepare_ip_blacklist(amapping_blacklist, ip_list):
+def prepare_ip_blacklist(amapping_blacklist, Amapping):
     def task(amapping_blacklist, ip_list):
         while True:
             for ip in ip_list:
