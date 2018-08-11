@@ -88,7 +88,7 @@ def send_one_ping(my_socket, dest_addr, ID):
     my_socket.sendto(packet, (dest_addr, 1)) # Don't know about the 1
  
  
-def ping(dest_addr, timeout):
+def ping(dest_addr, timeout, frequency=3):
     """
     Returns either the delay (in seconds) or none on timeout.
     """
@@ -107,8 +107,9 @@ def ping(dest_addr, timeout):
  
     my_ID = os.getpid() & 0xFFFF
  
-    send_one_ping(my_socket, dest_addr, my_ID)
-    delay = receive_one_ping(my_socket, my_ID, timeout)
- 
+    for _ in range(frequency):
+        send_one_ping(my_socket, dest_addr, my_ID)
+        delay = receive_one_ping(my_socket, my_ID, timeout)
+        if delay: break
     my_socket.close()
     return delay

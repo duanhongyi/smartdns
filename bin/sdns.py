@@ -69,7 +69,7 @@ def prepare_ip_blacklist(amapping_blacklist, ip_list):
         while True:
             for ip in ip_list:
                 try:
-                    delay  =  ping(ip, 9)
+                    delay  =  ping(ip, 2)
                 except socket.gaierror as e:
                     delay = None
                 if delay == None and ip not in amapping_blacklist:
