@@ -77,6 +77,12 @@ def prepare_ip_blacklist(amapping_blacklist, ip_list):
                 if delay != None and ip in amapping_blacklist:
                     amapping_blacklist.remove(ip)
             time.sleep(1)
+
+    ip_list = set()
+    for item in Amapping.values():
+        for key, value in item.items():
+            if key == 'ttl': continue
+            ip_list.update(value.split(' '))
     thread = threading.Thread(target=task, args=(amapping_blacklist, ip_list)) 
     thread.setDaemon(True)
     thread.start()
@@ -97,12 +103,7 @@ def prepare_run(run_env):
 	NSmapping = loadconfig(conf['NSFILE'])
 	SOAmapping = loadconfig(conf['SOAFILE'])
         AmappingBlacklist = set()
-        ip_list = set()
-        for item in Amapping.values():
-            for key, value in item.items():
-                if key == 'ttl': continue
-                ip_list.update(value.split(' '))
-        prepare_ip_blacklist(AmappingBlacklist, ip_list) 
+        prepare_ip_blacklist(AmappingBlacklist, Amapping) 
 	# set up a resolver that uses the mapping or a secondary nameserver
 	dnsforward = []
 	for i in conf['dnsforward_ip']:
