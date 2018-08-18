@@ -3,7 +3,8 @@
 #dns forward
 #需要支持多个
 dnsforward_ip:
-  - 8.8.8.8
+  - 119.29.29.29
+  - 180.76.76.76
 dnsforward_port: 53
 
 #ip data path
