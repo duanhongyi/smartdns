@@ -6,6 +6,7 @@ __version__='1.0.1.1'
 import sys, os
 import signal
 import time
+import socket
 import threading
 from os.path import isfile
 sys.path.append('../lib')
@@ -72,6 +73,9 @@ def prepare_ip_blacklist(amapping_blacklist, Amapping):
                     delay  =  ping(ip, 2)
                 except socket.gaierror as e:
                     delay = None
+				except Exception as e:
+					logger.exception(e)
+					continue
                 if delay == None and ip not in amapping_blacklist:
                     amapping_blacklist.add(ip)
                 if delay != None and ip in amapping_blacklist:
