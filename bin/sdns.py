@@ -73,9 +73,9 @@ def prepare_ip_blacklist(amapping_blacklist, Amapping):
                     delay  =  ping(ip, 2)
                 except socket.gaierror as e:
                     delay = None
-				except Exception as e:
-					logger.exception(e)
-					continue
+                except Exception as e:
+                    logger.exception(e)
+                    continue
                 if delay == None and ip not in amapping_blacklist:
                     amapping_blacklist.add(ip)
                 if delay != None and ip in amapping_blacklist:
