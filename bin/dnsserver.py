@@ -188,8 +188,6 @@ class SmartDNSFactory(server.DNSServerFactory):
                     and message.additional[0].rdlength > 8:
                 cliAddr = (message.additional[0].payload.dottedQuad(), 0)
                 edns = message.additional[0]
-        logger.info("[type: %s]\t[protocol: %s]\t[query: %s]\t[address: %s]\t[dns_server_addr: %s]\t[additional: %s]" % \
-            (typeToMethod[query.type], type(protocol), query, cliAddr[0], address[0], edns))
         return self.resolver.query(query, addr = cliAddr, edns = edns).addCallback(
                 self.gotResolverResponse, protocol, message, address
             ).addErrback(
@@ -211,4 +209,3 @@ class SmartDNSFactory(server.DNSServerFactory):
         if caches:
             self.cache = caches[-1]
         self.connections = []
-
