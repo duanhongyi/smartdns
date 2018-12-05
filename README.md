@@ -9,7 +9,7 @@ smartdns
 ##### 举个简单的例子，我们的一个站点test.test.com同时部署在电信和联通两个机房，该站点在电信机房的ip为1.1.1.1、在联通机房的ip为2.2.2.2，就可以通过smartdns做到该站点域名解析时判断源IP为电信的IP时返回1.1.1.1、判断源IP为联通的IP时返回2.2.2.2，从而达到不同运营商机房流量调度的目的。
 
 ## 安装方法
-1. 安装python-devel以及bzip2包，以centos为例：`yum install -y bzip python-devel`
+1. 安装python-devel以及bzip2包，以centos为例：`yum install -y bzip2 python-devel`
 2. 执行`script/install_smartdns.sh`脚本即可完成安装
 
 ## 支持的功能
