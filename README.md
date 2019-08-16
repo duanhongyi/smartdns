@@ -92,11 +92,11 @@ Twisted
 
 安装：
 
-git clone smartdns到本地路径，进入script目录，执行install_smartdns.sh即可将smartdns安装在本地，同时python环境和相关的依赖都是使用virtualenv来进行管理，不会对系统环境造成影响。
+git clone smartdns到本地路径，执行`python setup.py install`命令安装。
 
 启动：
 
-进入smartdns的bin路径下，执行sh run_dns.sh即可启动smartdns
+执行sdns /etc/smartdns即可启动smartdns
 
 ## 测试
 
