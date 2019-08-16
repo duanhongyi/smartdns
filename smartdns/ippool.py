@@ -131,7 +131,6 @@ class IPPool(object):
                 elif match[3] not in self.locmapip[fqdn][match[0]][match[1]][match[2]]:
                     self.locmapip[fqdn][match[0]][match[1]][match[2]][match[3]] = \
                         [self.record[fqdn][router], weight]
-        print(self.locmapip)
         f.close()
         # logger.warning(self.locmapip)
 
@@ -202,8 +201,6 @@ class IPPool(object):
                         if not re.search(r'[^0-9.]', tmp_ip) and self.monitor_mapping.check(name, tmp_ip)]
                 logger.info("userip:[%s] domain:[%s] section:[%s-%s] location:[%s,%s,%s,%s] ip_list:%s" % (
                     ip, name, long2ip(ipstart), long2ip(ipend), country, province, city, sp, ip_list))
-                print(self.iphash[i])
-                print(name, ipnum, ip, long2ip(ipstart), long2ip(ipend),country, province, city, sp, ip_list)
         if not ip_list or len(ip_list) == 0:
             # maybe something wrong
             tmp_ip_list = [

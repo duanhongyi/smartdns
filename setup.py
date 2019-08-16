@@ -26,7 +26,7 @@ setup(
 
     name='smartdns',
     description='An Intelligent DNS Similar to DNSPod',
-    version='3.1.7',
+    version='3.1.8',
     author='duanhongyi',
     author_email='duanhyi@gmail.com',
     packages=find_packages(),
