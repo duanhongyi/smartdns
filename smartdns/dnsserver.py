@@ -4,11 +4,12 @@ import random
 import re
 import time
 import inspect
-from logger import logger
-sys.path.append('../lib')
+import logging
 from twisted.names import dns, server, client, cache, common, resolve
 from twisted.python import failure
 from twisted.internet import defer
+
+logger = logging.getLogger(__name__)
 
 typeToMethod = {
     dns.A:     'lookupAddress',
@@ -67,7 +68,7 @@ class MapResolver(client.Resolver):
                 return self.typeToMethod[query.type](str(query.name), timeout, addr, edns)
             else:
                 return self.typeToMethod[query.type](str(query.name), timeout)
-        except KeyError, e:
+        except KeyError as e:
             return defer.fail(failure.Failure(NotImplementedError(str(self.__class__) + " " + str(query.type))))
 
     def lookupAddress(self, name, timeout = None, addr = None, edns = None):
@@ -97,7 +98,7 @@ class MapResolver(client.Resolver):
         if name in self.NSmapping:
             result = self.NSmapping[name]
             ttl = result['ttl']
-            record = re.split(ur',|\s+', result['record'])
+            record = re.split(r',|\s+', result['record'])
             def packResultNS(value):
                 ret = []
                 for x in value:
@@ -155,7 +156,7 @@ class SmartResolverChain(resolve.ResolverChain):
                 return self.typeToMethod[query.type](str(query.name), timeout, addr, edns)
             else:
                 return self.typeToMethod[query.type](str(query.name), timeout)
-        except KeyError, e:
+        except KeyError as e:
             return defer.fail(failure.Failure(NotImplementedError(str(self.__class__) + " " + str(query.type))))
 
     def lookupAddress(self, name, timeout = None, addr = None, edns = None):

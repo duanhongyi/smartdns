@@ -1,0 +1,8 @@
+#Smart DNS main config file
+
+#dns forward
+#需要支持多个
+dnsforward_ip:
+  - 119.29.29.29
+  - 180.76.76.76
+dnsforward_port: 53

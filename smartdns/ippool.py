@@ -3,21 +3,20 @@ import re
 import yaml
 import sys
 import os
-from logger import logger
 import time
 import bisect
+import logging
 from os.path import isfile
 import socket
 import struct
-sys.path.append('../lib/')
-reload(sys)
-sys.setdefaultencoding('utf8')
+
+logger = logging.getLogger(__name__)
 
 
 def ip2long(ip):
     "convert decimal dotted quad string to long integer"
-    hexn = ''.join(["%02X" % long(i) for i in ip.split('.')])
-    return long(hexn, 16)
+    hexn = ''.join(["%02X" % int(i) for i in ip.split('.')])
+    return int(hexn, 16)
 
 
 def long2ip(n):
@@ -31,7 +30,7 @@ def long2ip(n):
     return '.'.join(q)
 
 
-class IPPool:
+class IPPool(object):
     def __init__(self, ipfile, recordfile, monitor_mapping):
         if not isfile(ipfile):
             logger.warning("can't find ip data file: %s" % ipfile)
@@ -61,15 +60,15 @@ class IPPool:
         # load ip data
         self.LoadIP()
 
-        print 'Init IP pool finished !'
+        print('Init IP pool finished !')
 
     def LoadIP(self):
         f = open(self.ipfile, 'r')
         logger.warning("before load: %s" % (time.time()))
         for eachline in f:
             ipstart, ipend, country, province, city, sp = eachline.strip().split(',')
-            ipstart = long(ipstart)
-            ipend = long(ipend)
+            ipstart = int(ipstart)
+            ipend = int(ipend)
 
             # 如果ip地址为0,忽略
             if 0 == ipstart:
@@ -93,7 +92,7 @@ class IPPool:
     def LoadRecord(self):
         Add = [8, 4, 2, 1]
         f = open(self.recordfile, 'r')
-        self.record = yaml.load(f)
+        self.record = yaml.load(f, Loader=yaml.FullLoader)
         for fqdn in self.record:
             self.locmapip[fqdn] = {}
             if fqdn.endswith("_template"):
@@ -173,9 +172,9 @@ class IPPool:
 
     def ListIP(self):
         for key in self.iphash:
-            print "ipstart: %s  ipend: %s  country: %s  province: %s  city: %s  sp: %s" % (key, self.iphash[key][1], self.iphash[key][2], self.iphash[key][3], self.iphash[key][4], self.iphash[key][5])
+            print("ipstart: %s  ipend: %s  country: %s  province: %s  city: %s  sp: %s" % (key, self.iphash[key][1], self.iphash[key][2], self.iphash[key][3], self.iphash[key][4], self.iphash[key][5]))
             for i in self.iphash[key][6]:
-                print "[domain:%s   ip: %s]" % (i, self.iphash[key][6][i][0])
+                print("[domain:%s   ip: %s]" % (i, self.iphash[key][6][i][0]))
 
     def SearchLocation(self, ip):
         ipnum = ip2long(ip)
@@ -190,7 +189,7 @@ class IPPool:
 
     def FindIP(self, ip, name):
         i, j, ipnum = self.SearchLocation(ip)
-
+        ip_list = None
         if i in self.iphash:
             ipstart = self.iphash[i][0]
             ipend = self.iphash[i][1]
@@ -199,23 +198,18 @@ class IPPool:
             city = self.iphash[i][4]
             sp = self.iphash[i][5]
             if ipstart <= ipnum <= ipend:
-                ip_list = [tmp_ip for tmp_ip in re.split(ur',|\s+', self.iphash[i][6][name][0]) if not re.search(ur'[^0-9.]', tmp_ip)]
+                ip_list = [
+                    tmp_ip for tmp_ip in re.split(r',|\s+', self.iphash[i][6][name][0]) \
+                        if not re.search(r'[^0-9.]', tmp_ip) and self.monitor_mapping.check(name, tmp_ip)]
                 logger.info("userip:[%s] domain:[%s] section:[%s-%s] location:[%s,%s,%s,%s] ip_list:%s" % (
                     ip, name, long2ip(ipstart), long2ip(ipend), country, province, city, sp, ip_list))
-                return ip_list
-            else:
-                # print "可能不在ip列表内，需要指定默认地址"
-                ip_list = [tmp_ip for tmp_ip in re.split(ur',|\s+', self.record[name]['default']) if not re.search(ur'[^0-9.]', tmp_ip)]
-                logger.warning("userip:[%s] domain:[%s] ip-section:[%s-%s] range:[(%d-%d)-%d-%d] ip_list:%s" % (
-                    ip, name, long2ip(ipstart), long2ip(ipend), ipstart, ipend, ipnum, j, ip_list))
-                return ip_list
-        else:
+        if not ip_list or len(ip_list) == 0:
             # maybe something wrong
-            ip_list = [tmp_ip for tmp_ip in re.split(ur',|\s+', self.record[name]['default']) if not re.search(ur'[^0-9].', tmp_ip)]
-            logger.warning(
-                "can't find ip in iphash, ip:[%s] domain:[%s] ip_list:%s" % (ip, name, ip_list))
-            return ip_list
-
-
-if __name__ == '__main__':
-    ipcheck = IPPool('../data/ip.csv', '../conf/a.yaml')
+            tmp_ip_list = [
+                tmp_ip for tmp_ip in re.split(r',|\s+', self.record[name]['default']) \
+                    if not re.search(r'[^0-9].', tmp_ip)]
+            ip_list = [tmp_ip for tmp_ip in tmp_ip_list if self.monitor_mapping.check(name, tmp_ip)]
+            if len(ip_list) == 0:
+                logger.warning("no available ip for %s, use default ip" % name)
+                return tmp_ip_list
+        return ip_list

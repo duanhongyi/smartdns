@@ -1,0 +1,4 @@
+horizon.parkone.cn:
+  interval: 30
+  frequency: 3
+  url: https://www.baidu.com

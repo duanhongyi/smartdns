@@ -3,9 +3,14 @@
 # version
 __version__ = '1.0.1.1'
 
-import dnsserver
-import ippool
-import monitor
+import socket
+import time
+import signal
+import sys
+import os
+import yaml
+import logging
+from os.path import isfile
 from zope.interface import implements
 from twisted.internet import defer, interfaces
 from twisted.python import failure
@@ -13,36 +18,18 @@ from twisted.internet.protocol import DatagramProtocol
 from twisted.application import service, internet
 from twisted.names import dns, server, client, cache, common, resolve
 from twisted.internet import reactor
-from twisted.internet import epollreactor
-from logger import SLogger
-import yaml
-from os.path import isfile
-import threading
-import socket
-import time
-import signal
-import sys
-import os
-sys.path.append('../lib')
-
-logger = SLogger.init_logger("../log/access_dns.log")
-
-# setup epoll reactor @PZ
-epollreactor.install()
+from . import dnsserver, ippool, monitor
 
 
-sys.path.append('ippool.py')
-sys.path.append('dnsserver.py')
+logger = logging.getLogger(__name__)
 
 
 def loadconfig(path):
     if not isfile(path):
-        print "[FATAL] can't find config file %s !" % path
+        print("[FATAL] can't find config file %s !" % path)
         exit(1)
-    f = open(path, 'r')
-    x = yaml.load(f)
-    f.close
-    return x
+    with open(path, 'r') as f:
+        return yaml.load(f, Loader=yaml.FullLoader)
 
 
 def get_local_ip():
@@ -57,7 +44,7 @@ def get_local_ip():
     max_possible = 8  # initial value
     while True:
         bytes = max_possible * struct_size
-        names = array.array('B', '\0' * bytes)
+        names = array.array('B', b'\0' * bytes)
         outbytes = struct.unpack('iL', fcntl.ioctl(
             s.fileno(),
             0x8912,  # SIOCGIFCONF
@@ -68,26 +55,31 @@ def get_local_ip():
         else:
             break
     namestr = names.tostring()
-    return [(namestr[i:i+16].split('\0', 1)[0],
+    return [(namestr[i:i+16].split(b'\0', 1)[0],
              socket.inet_ntoa(namestr[i+20:i+24]))
             for i in range(0, outbytes, struct_size)]
 
 
 def prepare_run(run_env):
         # load main config
-    logger.info('start to load conf/sdns.yaml ......')
-    conf = loadconfig('../conf/sdns.yaml')
+    logger.info('start to load %s ......' % run_env['conf'])
+    conf = loadconfig(os.path.join(run_env['conf'], 'sdns.yaml'))
 
     logger.info('start to load A,SOA,NS record ......')
-    Amapping = loadconfig(conf['AFILE'])
-    NSmapping = loadconfig(conf['NSFILE'])
-    SOAmapping = loadconfig(conf['SOAFILE'])
+    Amapping = loadconfig(os.path.join(run_env['conf'], 'a.yaml'))
+    NSmapping = loadconfig(os.path.join(run_env['conf'], 'ns.yaml'))
+    SOAmapping = loadconfig(os.path.join(run_env['conf'], 'soa.yaml'))
 
     # start monitor
-    monitor_mapping = monitor.MonitorMapping(Amapping)
+    monitor_config = loadconfig(os.path.join(run_env['conf'], 'monitor.yaml'))
+    monitor_mapping = monitor.MonitorMapping(monitor_config, Amapping)
     # load dns record config file
     logger.info('start to init IP pool ......')
-    Finder = ippool.IPPool(conf['IPDATA'], conf['AFILE'], monitor_mapping)
+    Finder = ippool.IPPool(
+        os.path.join(run_env['conf'], 'ip.csv'),
+        os.path.join(run_env['conf'], 'a.yaml'),
+        monitor_mapping)
+
     run_env['finder'] = Finder
 
     # set up a resolver that uses the mapping or a secondary nameserver
@@ -107,10 +99,14 @@ def prepare_run(run_env):
         run_env['udp'].append([p, ip])
 
 
-# run it through twistd!
-if __name__ == '__main__':
+def main():
     run_env = {'udp': [], 'tcp': [], 'closed': 0,
                'updated': False, 'finder': None}
+    if len(sys.argv) > 1:
+        run_env['conf'] = sys.argv[1]
+    else:
+        run_env['conf'] = '/etc/smartdns'
+        
     prepare_run(run_env)
     for e in run_env['tcp']:
         reactor.listenTCP(53, e[0], interface=e[1])

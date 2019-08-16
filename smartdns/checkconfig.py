@@ -3,7 +3,6 @@
 import sys, os
 import traceback
 from os.path import isfile
-sys.path.append('../lib')
 import yaml
 
 def loadconfig(path):
