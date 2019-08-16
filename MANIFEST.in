@@ -1,3 +1,2 @@
 include README.md
 include MANIFEST.in
-recursive-include templates *
