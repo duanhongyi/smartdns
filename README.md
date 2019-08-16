@@ -1,12 +1,13 @@
 smartdns
 ========
 ## 使用场景
-##### smartdns是python语言编写，基于twisted框架实现的dns server，能够支持针对不同的dns请求根据配置返回不同的解析结果。smartdns获取dns请求的源IP或者客户端IP（支持edns协议的请求可以获取客户端IP），根据本地的静态IP库获取请求IP的特性，包括所在的国家、省份、城市、ISP等，然后根据我们的调度配置返回解析结果。
-##### smartdns的使用场景：
-1. 服务的多机房流量调度，比如电信流量调度到电信机房、联通流量调度到联通机房；
-2. 用户访问控制，将用户调度到离用户最近或者链路质量最好的节点上。
 
-##### 举个简单的例子，我们的一个站点test.test.com同时部署在电信和联通两个机房，该站点在电信机房的ip为1.1.1.1、在联通机房的ip为2.2.2.2，就可以通过smartdns做到该站点域名解析时判断源IP为电信的IP时返回1.1.1.1、判断源IP为联通的IP时返回2.2.2.2，从而达到不同运营商机房流量调度的目的。
+smartdns是python语言编写，基于twisted框架实现的dns server，能够支持针对不同的dns请求根据配置返回不同的解析结果。smartdns获取dns请求的源IP或者客户端IP（支持edns协议的请求可以获取客户端IP），根据本地的静态IP库获取请求IP的特性，包括所在的国家、省份、城市、ISP等，然后根据我们的调度配置返回解析结果，smartdns的典型使用场景：
+
+* 服务的多机房流量调度，比如电信流量调度到电信机房、联通流量调度到联通机房；
+* 用户访问控制，将用户调度到离用户最近或者链路质量最好的节点上。
+
+举个简单的例子，我们的一个站点test.test.com同时部署在电信和联通两个机房，该站点在电信机房的ip为1.1.1.1、在联通机房的ip为2.2.2.2，就可以通过smartdns做到该站点域名解析时判断源IP为电信的IP时返回1.1.1.1、判断源IP为联通的IP时返回2.2.2.2，从而达到不同运营商机房流量调度的目的。
 
 ## 安装方法
 1. 安装python-devel以及bzip2包，以centos为例：`yum install -y bzip2 python-devel`
@@ -62,9 +63,23 @@ iphash初始化过程中最关键的是iphash[IP段起始][6][域名1]的最优�
 
 ![ippool的findip方法](http://noops.me/wp-content/uploads/2013/08/ippool%E7%9A%84findip%E6%96%B9%E5%BC%8F.png)
 
+## 监控
+
+监控配置详见配置目录的monitor.yaml，内容如下：
+
+```
+horizon.parkone.cn:
+  interval: 30
+  frequency: 3
+  url: https://www.baidu.com
+```
+
+分别代表监控域名、监控周期(秒)、容错次数、监控url，监控失败的次数大于容错次数则停止该条记录的解析。
+
+
 ## 代码
 
-github： https://github.com/xiaomi-sa/smartdns
+github： https://github.com/duanhongyi/smartdns
 
 ## 安装
 
@@ -72,10 +87,8 @@ github： https://github.com/xiaomi-sa/smartdns
 
 gcc
 bzip2
-python 2.6或者2.7以及相关dev包
-Twisted 12.2.0
-zope.interface 4.0.1
-
+python3以及相关dev包
+Twisted
 
 安装：
 
