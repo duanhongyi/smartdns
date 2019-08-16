@@ -54,10 +54,9 @@ class FailureHandler:
 
 
 class MapResolver(client.Resolver):
-    def __init__(self, Finder, Amapping, AmappingBlacklist, NSmapping, SOAmapping, servers):
+    def __init__(self, Finder, Amapping, NSmapping, SOAmapping, servers):
         self.Finder = Finder
         self.Amapping = Amapping
-        self.AmappingBlacklist = AmappingBlacklist
         self.NSmapping = NSmapping
         self.SOAmapping = SOAmapping
         client.Resolver.__init__(self, servers=servers)
@@ -78,7 +77,6 @@ class MapResolver(client.Resolver):
                 ret = []
                 add = []
                 for x in value:
-                    if x in self.AmappingBlacklist: continue
                     ret.append(dns.RRHeader(name, dns.A, dns.IN, ttl, dns.Record_A(x, ttl), True))
                 
                 if edns is not None:
