@@ -37,6 +37,7 @@ setup(
     tests_require=test_requirements,
     platforms='all platform',
     license='BSD',
+    long_description_content_type='text/markdown',
     # install
     entry_points={'console_scripts': ['sdns=smartdns.sdns:main']}
 )
