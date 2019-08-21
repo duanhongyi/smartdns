@@ -2,7 +2,7 @@ smartdns
 ========
 ## 使用场景
 
-smartdns是python3语言编写，smartdns基于小米[smartdns](https://github.com/xiaomi-sa/smartdns)二次开发，支持类似Dnspod的D监控功能，能够支持针对不同的dns请求根据配置返回不同的解析结果。smartdns获取dns请求的源IP或者客户端IP（支持edns协议的请求可以获取客户端IP），根据本地的静态IP库获取请求IP的特性，包括所在的国家、省份、城市、ISP等，然后根据我们的调度配置返回解析结果，smartdns的典型使用场景：
+smartdns是python3语言编写，smartdns基于[小米smartdns](https://github.com/xiaomi-sa/smartdns)二次开发，支持类似Dnspod的D监控功能，能够支持针对不同的dns请求根据配置返回不同的解析结果。smartdns获取dns请求的源IP或者客户端IP（支持edns协议的请求可以获取客户端IP），根据本地的静态IP库获取请求IP的特性，包括所在的国家、省份、城市、ISP等，然后根据我们的调度配置返回解析结果，smartdns的典型使用场景：
 
 * 服务的多机房流量调度，比如电信流量调度到电信机房、联通流量调度到联通机房；
 * 用户访问控制，将用户调度到离用户最近或者链路质量最好的节点上。
