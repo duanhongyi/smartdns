@@ -82,6 +82,9 @@ def prepare_run(run_env):
 
     run_env['finder'] = Finder
 
+    listen_tcp_port = conf['listen']['tcp']
+    listen_udp_port = conf['listen']['udp']
+
     # set up a resolver that uses the mapping or a secondary nameserver
     dnsforward = []
     for i in conf['dnsforward_ip']:
@@ -95,8 +98,8 @@ def prepare_run(run_env):
             caches=[cache.CacheResolver()], clients=[SmartResolver])
         p = dns.DNSDatagramProtocol(f)
         f.noisy = p.noisy = False
-        run_env['tcp'].append([f, ip])
-        run_env['udp'].append([p, ip])
+        run_env['tcp'].append([listen_tcp_port, f, ip])
+        run_env['udp'].append([listen_udp_port, p, ip])
 
 
 def main():
@@ -109,7 +112,7 @@ def main():
         
     prepare_run(run_env)
     for e in run_env['tcp']:
-        reactor.listenTCP(53, e[0], interface=e[1])
+        reactor.listenTCP(e[0], e[1], interface=e[2])
     for e in run_env['udp']:
-        reactor.listenUDP(53, e[0], interface=e[1])
+        reactor.listenUDP(e[0], e[1], interface=e[2])
     reactor.run()

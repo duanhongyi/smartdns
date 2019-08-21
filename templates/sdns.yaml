@@ -1,5 +1,10 @@
 #Smart DNS main config file
 
+#监听端口
+listen:
+  tcp: 53
+  udp: 53
+
 #dns forward
 #需要支持多个
 dnsforward_ip:
