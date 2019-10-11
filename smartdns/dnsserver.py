@@ -181,10 +181,12 @@ class SmartDNSFactory(server.DNSServerFactory):
         cliAddr = address
         if query.type == 43 or typeToMethod[query.type] == 'lookupAllRecords':
             return [(),(),()]
-        if typeToMethod[query.type] in smartType and \
+        if isinstance(protocol, dns.DNSProtocol):
+            cliAddr = protocol.transport.client
+        elif typeToMethod[query.type] in smartType and \
                     len(message.additional) != 0 and \
-                    message.additional[0].type == 41 \
-                    and message.additional[0].rdlength > 8:
+                    message.additional[0].type == 41 and \
+                    message.additional[0].rdlength > 8:
                 cliAddr = (message.additional[0].payload.dottedQuad(), 0)
                 edns = message.additional[0]
         return self.resolver.query(query, addr = cliAddr, edns = edns).addCallback(
