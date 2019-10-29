@@ -205,7 +205,7 @@ class IPPool(object):
             # maybe something wrong
             tmp_ip_list = [
                 tmp_ip for tmp_ip in re.split(r',|\s+', self.record[name]['default']) \
-                    if not re.search(r'[^0-9].', tmp_ip)]
+                    if not re.search(r'[^0-9.]', tmp_ip)]
             ip_list = [tmp_ip for tmp_ip in tmp_ip_list if self.monitor_mapping.check(name, tmp_ip)]
             if len(ip_list) == 0:
                 logger.warning("no available ip for %s, use default ip" % name)
