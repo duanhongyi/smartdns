@@ -1,7 +1,6 @@
 #coding:utf-8
 
 import os
-import sys
 from setuptools import setup, find_packages
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -26,7 +25,7 @@ setup(
 
     name='smartdns',
     description='An Intelligent DNS Similar to DNSPod',
-    version='3.1.10',
+    version='3.2.1',
     author='duanhongyi',
     author_email='duanhyi@gmail.com',
     packages=find_packages(),
