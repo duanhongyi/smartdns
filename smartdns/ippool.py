@@ -23,13 +23,13 @@ def long2ip(num):
     "convert long int to dotted quad string"
     iplist = []
     for n in range(4):
-        num,mod = divmod(num,256)
-        iplist.insert(0,str(mod))
+        num, mod = divmod(num, 256)
+        iplist.insert(0, str(mod))
     return '.'.join(iplist)
 
 
 class IPPool(object):
-    def __init__(self, ipfile, recordfile, monitor_mapping):
+    def __init__(self, ipfile, recordfile):
         if not isfile(ipfile):
             logger.warning("can't find ip data file: %s" % ipfile)
             # 故意返回数据，另程序退出
@@ -40,7 +40,6 @@ class IPPool(object):
             logger.warning("can't find A record file: %s" % recordfile)
             return 2
         self.recordfile = recordfile
-        self.monitor_mapping = monitor_mapping
 
         # 初始化iplist，用来进行2分查找
         self.iplist = []
@@ -170,7 +169,8 @@ class IPPool(object):
 
     def ListIP(self):
         for key in self.iphash:
-            print("ipstart: %s  ipend: %s  country: %s  province: %s  city: %s  sp: %s" % (key, self.iphash[key][1], self.iphash[key][2], self.iphash[key][3], self.iphash[key][4], self.iphash[key][5]))
+            print("ipstart: %s  ipend: %s  country: %s  province: %s  city: %s  sp: %s" % (
+                key, self.iphash[key][1], self.iphash[key][2], self.iphash[key][3], self.iphash[key][4], self.iphash[key][5]))
             for i in self.iphash[key][6]:
                 print("[domain:%s   ip: %s]" % (i, self.iphash[key][6][i][0]))
 
@@ -197,17 +197,35 @@ class IPPool(object):
             sp = self.iphash[i][5]
             if ipstart <= ipnum <= ipend:
                 ip_list = [
-                    tmp_ip for tmp_ip in re.split(r',|\s+', self.iphash[i][6][name][0]) \
-                        if not re.search(r'[^0-9.]', tmp_ip) and self.monitor_mapping.check(name, tmp_ip)]
+                    tmp_ip for tmp_ip in re.split(r',|\s+', self.iphash[i][6][name][0])
+                    if not re.search(r'[^0-9.]', tmp_ip)]
                 logger.info("userip:[%s] domain:[%s] section:[%s-%s] location:[%s,%s,%s,%s] ip_list:%s" % (
                     ip, name, long2ip(ipstart), long2ip(ipend), country, province, city, sp, ip_list))
         if not ip_list or len(ip_list) == 0:
             # maybe something wrong
-            tmp_ip_list = [
-                tmp_ip for tmp_ip in re.split(r',|\s+', self.record[name]['default']) \
-                    if not re.search(r'[^0-9.]', tmp_ip)]
-            ip_list = [tmp_ip for tmp_ip in tmp_ip_list if self.monitor_mapping.check(name, tmp_ip)]
-            if len(ip_list) == 0:
-                logger.warning("no available ip for %s, use default ip" % name)
-                return tmp_ip_list
+            ip_list = [
+                tmp_ip for tmp_ip in re.split(r',|\s+', self.record[name]['default'])
+                if not re.search(r'[^0-9.]', tmp_ip)]
+        return ip_list
+
+
+class CachedIPPool(object):
+
+    def __init__(self, ipfile, recordfile, monitor_mapping):
+        self.caches = {}
+        self.monitor_mapping = monitor_mapping
+        self.finder = IPPool(ipfile, recordfile)
+
+    def FindIP(self, ip, name):
+        key = "%s-%s" % (ip, name)
+        if key in self.caches:
+            tmp_ip_list = self.caches[key]
+        else:
+            tmp_ip_list = self.finder.FindIP(ip, name)
+            self.caches[key] = tmp_ip_list
+        ip_list = [
+            tmp_ip for tmp_ip in tmp_ip_list if self.monitor_mapping.check(name, tmp_ip)]
+        if len(ip_list) == 0:
+            logger.warning("no available ip for %s, use default ip" % name)
+            return tmp_ip_list
         return ip_list
