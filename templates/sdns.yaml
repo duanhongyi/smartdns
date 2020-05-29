@@ -1,13 +1,17 @@
 #Smart DNS main config file
 
+#进程数量
+workers: 4
+
 #监听端口
 listen:
-  tcp: 53
-  udp: 53
+  tcp:
+    - 0.0.0.0:53
+  udp:
+    - 0.0.0.0:53
 
 #dns forward
 #需要支持多个
-dnsforward_ip:
-  - 119.29.29.29
-  - 180.76.76.76
-dnsforward_port: 53
+dnsforward:
+  - 119.29.29.29:53
+  - 180.76.76.76:53
