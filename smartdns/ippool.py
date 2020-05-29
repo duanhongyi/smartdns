@@ -28,7 +28,7 @@ def long2ip(num):
     return '.'.join(iplist)
 
 
-class IPPool(object):
+class BaseIPPool(object):
     def __init__(self, ipfile, recordfile):
         if not isfile(ipfile):
             logger.warning("can't find ip data file: %s" % ipfile)
@@ -209,20 +209,14 @@ class IPPool(object):
         return ip_list
 
 
-class CachedIPPool(object):
+class IPPool(object):
 
     def __init__(self, ipfile, recordfile, monitor_mapping):
-        self.caches = {}
         self.monitor_mapping = monitor_mapping
-        self.finder = IPPool(ipfile, recordfile)
+        self.finder = BaseIPPool(ipfile, recordfile)
 
     def FindIP(self, ip, name):
-        key = "%s-%s" % (ip, name)
-        if key in self.caches:
-            tmp_ip_list = self.caches[key]
-        else:
-            tmp_ip_list = self.finder.FindIP(ip, name)
-            self.caches[key] = tmp_ip_list
+        tmp_ip_list = self.finder.FindIP(ip, name)
         ip_list = [
             tmp_ip for tmp_ip in tmp_ip_list if self.monitor_mapping.check(name, tmp_ip)]
         if len(ip_list) == 0:

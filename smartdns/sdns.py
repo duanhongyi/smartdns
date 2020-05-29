@@ -44,7 +44,7 @@ def prepare_run(run_env):
     monitor_mapping = monitor.MonitorMapping(monitor_config, a_mapping)
     # load dns record config file
     logger.info('start to init IP pool ......')
-    finder = ippool.CachedIPPool(
+    finder = ippool.IPPool(
         os.path.join(run_env['conf'], 'ip.csv'),
         os.path.join(run_env['conf'], 'a.yaml'),
         monitor_mapping)
