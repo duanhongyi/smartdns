@@ -2,13 +2,10 @@
 import re
 import yaml
 import sys
-import os
 import time
 import bisect
 import logging
 from os.path import isfile
-import socket
-import struct
 
 logger = logging.getLogger(__name__)
 
@@ -22,42 +19,38 @@ def ip2long(ip):
 def long2ip(num):
     "convert long int to dotted quad string"
     iplist = []
-    for n in range(4):
+    for _ in range(4):
         num, mod = divmod(num, 256)
         iplist.insert(0, str(mod))
     return '.'.join(iplist)
 
 
 class BaseIPPool(object):
+
     def __init__(self, ipfile, recordfile):
-        if not isfile(ipfile):
+        if not isfile(ipfile) or not isfile(recordfile):
             logger.warning("can't find ip data file: %s" % ipfile)
-            # 故意返回数据，另程序退出
-            return 1
-        self.ipfile = ipfile
+        else:
+            self.ipfile = ipfile
+            self.recordfile = recordfile
 
-        if not isfile(recordfile):
-            logger.warning("can't find A record file: %s" % recordfile)
-            return 2
-        self.recordfile = recordfile
+            # 初始化iplist，用来进行2分查找
+            self.iplist = []
+            # 初始化iphash，用来检索详细信息
+            self.iphash = {}
 
-        # 初始化iplist，用来进行2分查找
-        self.iplist = []
-        # 初始化iphash，用来检索详细信息
-        self.iphash = {}
+            # 初始化存储a.yaml配置
+            self.record = {}
+            # 存储各个域名的地域对于ip信息
+            self.locmapip = {}
 
-        # 初始化存储a.yaml配置
-        self.record = {}
-        # 存储各个域名的地域对于ip信息
-        self.locmapip = {}
+            # load record data
+            self.LoadRecord()
 
-        # load record data
-        self.LoadRecord()
+            # load ip data
+            self.LoadIP()
 
-        # load ip data
-        self.LoadIP()
-
-        print('Init IP pool finished !')
+            print('Init IP pool finished !')
 
     def LoadIP(self):
         f = open(self.ipfile, 'r')
@@ -186,7 +179,7 @@ class BaseIPPool(object):
         return i, j, ipnum
 
     def FindIP(self, ip, name):
-        i, j, ipnum = self.SearchLocation(ip)
+        i, _, ipnum = self.SearchLocation(ip)
         ip_list = None
         if i in self.iphash:
             ipstart = self.iphash[i][0]
@@ -216,7 +209,9 @@ class IPPool(object):
         self.finder = BaseIPPool(ipfile, recordfile)
 
     def FindIP(self, ip, name):
+        start_time = time.time()
         tmp_ip_list = self.finder.FindIP(ip, name)
+        logger.warning("use time: %s" % (time.time() - start_time))
         ip_list = [
             tmp_ip for tmp_ip in tmp_ip_list if self.monitor_mapping.check(name, tmp_ip)]
         if len(ip_list) == 0:
