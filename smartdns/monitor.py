@@ -1,8 +1,8 @@
-from urllib.parse import urlparse
-from twisted.web.iweb import IPolicyForHTTPS
-from twisted.web.client import Agent, BrowserLikePolicyForHTTPS
 from twisted.internet import task, ssl, reactor
+from twisted.web.client import Agent, BrowserLikePolicyForHTTPS
 from twisted.web.http_headers import Headers
+from twisted.web.iweb import IPolicyForHTTPS
+from urllib.parse import urlparse
 from zope.interface import implementer
 
 
@@ -29,7 +29,7 @@ class Monitor(object):
             if ip not in self.black_mapping:
                 self.black_mapping[ip] = 0
             url = self.monitor['url'].replace(host, ip, 1).encode("utf8")
-            agent=Agent(reactor, contextFactory=SmartClientContextFactory(), connectTimeout=30)
+            agent = Agent(reactor, contextFactory=SmartClientContextFactory(), connectTimeout=30)
             agent.request(b'GET', url, headers=Headers({"host": [host, ]})).addCallbacks(
                 BlackMappingRemover(ip, self.black_mapping), BlackMappingAdder(ip, self.black_mapping))
 

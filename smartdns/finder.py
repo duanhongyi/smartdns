@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-import re
-import yaml
-import sys
-import time
 import bisect
 import logging
+import re
+import sys
+import time
+import yaml
+from functools import lru_cache
 from os.path import isfile
 
 logger = logging.getLogger(__name__)
@@ -25,7 +26,7 @@ def long2ip(num):
     return '.'.join(iplist)
 
 
-class BaseIPPool(object):
+class BaseFinder(object):
 
     def __init__(self, ipfile, recordfile):
         if not isfile(ipfile) or not isfile(recordfile):
@@ -45,14 +46,14 @@ class BaseIPPool(object):
             self.locmapip = {}
 
             # load record data
-            self.LoadRecord()
+            self.loadRecord()
 
             # load ip data
-            self.LoadIP()
+            self.loadIP()
 
             print('Init IP pool finished !')
 
-    def LoadIP(self):
+    def loadIP(self):
         f = open(self.ipfile, 'r')
         logger.warning("before load: %s" % (time.time()))
         for eachline in f:
@@ -72,14 +73,14 @@ class BaseIPPool(object):
                 self.iphash[ipstart] = [ipstart, ipend,
                                         country, province, city, sp, {}]
                 # 最好合并后再计算
-                self.JoinIP(ipstart)
+                self.joinIP(ipstart)
         f.close()
         logger.warning("after load: %s" % (time.time()))
         self.iplist.sort()
         logger.warning("after sort: %s" % (time.time()))
 
     # 重写LoadRecord和JoinIP，提升启动效率
-    def LoadRecord(self):
+    def loadRecord(self):
         Add = [8, 4, 2, 1]
         f = open(self.recordfile, 'r')
         self.record = yaml.load(f, Loader=yaml.FullLoader)
@@ -126,31 +127,31 @@ class BaseIPPool(object):
         f.close()
         # logger.warning(self.locmapip)
 
-    def JoinIP(self, ip):
+    def joinIP(self, ip):
         for fqdnk, fqdnv in self.locmapip.items():
             l1 = []
             l2 = []
             l3 = []
             weight = 0
-            #logger.warning("l1 : %s, %s" %(self.iphash[ip][2], fqdnv.keys()))
+            # logger.warning("l1 : %s, %s" %(self.iphash[ip][2], fqdnv.keys()))
             if "" in fqdnv and "" != self.iphash[ip][2]:
                 l1.append(fqdnv[""])
             if self.iphash[ip][2] in fqdnv:
                 l1.append(fqdnv[self.iphash[ip][2]])
             for k in l1:
-                #logger.warning("l2 : %s, %s" %(self.iphash[ip][3], k.keys()))
+                # logger.warning("l2 : %s, %s" %(self.iphash[ip][3], k.keys()))
                 if "" in k and "" != self.iphash[ip][3]:
                     l2.append(k[""])
                 if self.iphash[ip][3] in k:
                     l2.append(k[self.iphash[ip][3]])
             for k in l2:
-                #logger.warning("l3 : %s, %s" %(self.iphash[ip][4], k.keys()))
+                # logger.warning("l3 : %s, %s" %(self.iphash[ip][4], k.keys()))
                 if "" in k and "" != self.iphash[ip][4]:
                     l3.append(k[""])
                 if self.iphash[ip][4] in k:
                     l3.append(k[self.iphash[ip][4]])
             for k in l3:
-                #logger.warning("l4 : %s, %s" %(self.iphash[ip][5], k.keys()))
+                # logger.warning("l4 : %s, %s" %(self.iphash[ip][5], k.keys()))
                 if "" in k and k[""][1] > weight:
                     self.iphash[ip][6][fqdnk] = k[""]
                     weight = k[""][1]
@@ -160,14 +161,15 @@ class BaseIPPool(object):
             if fqdnk not in self.iphash[ip][6]:
                 self.iphash[ip][6][fqdnk] = [self.record[fqdnk]['default'], 0]
 
-    def ListIP(self):
+    def listIP(self):
         for key in self.iphash:
             print("ipstart: %s  ipend: %s  country: %s  province: %s  city: %s  sp: %s" % (
-                key, self.iphash[key][1], self.iphash[key][2], self.iphash[key][3], self.iphash[key][4], self.iphash[key][5]))
+                key, self.iphash[key][1], self.iphash[key][2], self.iphash[key][3], self.iphash[key][4],
+                self.iphash[key][5]))
             for i in self.iphash[key][6]:
                 print("[domain:%s   ip: %s]" % (i, self.iphash[key][6][i][0]))
 
-    def SearchLocation(self, ip):
+    def searchLocation(self, ip):
         ipnum = ip2long(ip)
         ip_point = bisect.bisect_right(self.iplist, ipnum)
         i = self.iplist[ip_point - 1]
@@ -178,8 +180,9 @@ class BaseIPPool(object):
 
         return i, j, ipnum
 
-    def FindIP(self, ip, name):
-        i, _, ipnum = self.SearchLocation(ip)
+    @lru_cache(maxsize=2048 * 2048, typed=True)
+    def findIP(self, ip, name):
+        i, _, ipnum = self.searchLocation(ip)
         ip_list = None
         if i in self.iphash:
             ipstart = self.iphash[i][0]
@@ -202,16 +205,14 @@ class BaseIPPool(object):
         return ip_list
 
 
-class IPPool(object):
+class Finder(object):
 
     def __init__(self, ipfile, recordfile, monitor_mapping):
         self.monitor_mapping = monitor_mapping
-        self.finder = BaseIPPool(ipfile, recordfile)
+        self.finder = BaseFinder(ipfile, recordfile)
 
-    def FindIP(self, ip, name):
-        start_time = time.time()
-        tmp_ip_list = self.finder.FindIP(ip, name)
-        logger.warning("use time: %s" % (time.time() - start_time))
+    def findIP(self, ip, name):
+        tmp_ip_list = self.finder.findIP(ip, name)
         ip_list = [
             tmp_ip for tmp_ip in tmp_ip_list if self.monitor_mapping.check(name, tmp_ip)]
         if len(ip_list) == 0:

@@ -1,7 +1,7 @@
 #Smart DNS main config file
 
 #进程数量
-workers: 4
+workers: 1
 
 #监听端口
 listen:
@@ -12,6 +12,6 @@ listen:
 
 #dns forward
 #需要支持多个
-dnsforward:
+dns_forwards:
   - 119.29.29.29:53
   - 180.76.76.76:53
