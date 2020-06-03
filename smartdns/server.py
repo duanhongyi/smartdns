@@ -200,7 +200,7 @@ class SmartDNSFactory(server.DNSServerFactory):
                 len(message.additional) != 0 and \
                 message.additional[0].type == 41 and \
                 message.additional[0].rdlength > 8:
-            if isinstacne(message.additional[0].payload, dns.Record_A):
+            if isinstance(message.additional[0].payload, dns.Record_A):
                 cliAddr = (message.additional[0].payload.dottedQuad(), 0)
             edns = message.additional[0]
         return self.resolver.query(query, addr=cliAddr, edns=edns).addCallback(
