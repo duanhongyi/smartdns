@@ -6,6 +6,8 @@ from twisted.internet import defer
 from twisted.names import dns, server, client, common, resolve
 from twisted.python import failure
 
+from . import sdns
+
 logger = logging.getLogger(__name__)
 
 typeToMethod = {
@@ -81,9 +83,9 @@ class MapResolver(client.Resolver):
 
                 if edns is not None:
                     if edns.rdlength > 8:
-                        add.append(dns.RRHeader('', dns.EDNS, 4096, edns.ttl, edns.payload, True))
+                        add.append(dns.RRHeader('', sdns.EDNS, 4096, edns.ttl, edns.payload, True))
                     else:
-                        add.append(dns.RRHeader('', dns.EDNS, 4096, 0, dns.Record_EDNS(None, 0), True))
+                        add.append(dns.RRHeader('', sdns.EDNS, 4096, 0, sdns.Record_EDNS(None, 0), True))
                 return [ret, (), add]
 
             result = self.finder.findIP(str(addr[0]), name)
@@ -119,7 +121,7 @@ class MapResolver(client.Resolver):
                     if edns.rdlength > 8:
                         add.append(dns.RRHeader('', dns.EDNS, 4096, edns.ttl, edns.payload, True))
                     else:
-                        add.append(dns.RRHeader('', dns.EDNS, 4096, 0, dns.Record_EDNS(None, 0), True))
+                        add.append(dns.RRHeader('', dns.EDNS, 4096, 0, sdns.Record_EDNS(None, 0), True))
 
                 return [(dns.RRHeader(name, dns.SOA, dns.IN, value['ttl'],
                                       dns.Record_SOA(value['record'], value['email'], value['serial'], value['refresh'],

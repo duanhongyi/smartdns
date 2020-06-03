@@ -25,7 +25,7 @@ setup(
 
     name='smartdns',
     description='An Intelligent DNS Similar to DNSPod',
-    version='3.3.3',
+    version='3.3.4',
     author='duanhongyi',
     author_email='duanhyi@gmail.com',
     packages=find_packages(),
@@ -38,5 +38,5 @@ setup(
     license='BSD',
     long_description_content_type='text/markdown',
     # install
-    entry_points={'console_scripts': ['sdns=smartdns.sdns:main']}
+    entry_points={'console_scripts': ['sdns=smartdns.runner:run']}
 )

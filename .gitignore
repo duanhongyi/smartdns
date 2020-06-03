@@ -21,3 +21,5 @@ develop-eggs
 *.pyc
 *.pid
 .venv
+.idea
+.vscode
