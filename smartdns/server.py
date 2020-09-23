@@ -72,26 +72,31 @@ class MapResolver(client.Resolver):
             return defer.fail(failure.Failure(NotImplementedError(str(self.__class__) + " " + str(query.type))))
 
     def lookupAddress(self, name, timeout=None, addr=None, edns=None):
+
+        def packResult(value, ttl):
+            ret = []
+            add = []
+            for x in value:
+                ret.append(dns.RRHeader(name, dns.A, dns.IN, ttl, dns.Record_A(x, ttl), True))
+
+            if edns is not None:
+                if edns.rdlength > 8:
+                    add.append(dns.RRHeader('', sdns.EDNS, 4096, edns.ttl, edns.payload, True))
+                else:
+                    add.append(dns.RRHeader('', sdns.EDNS, 4096, 0, sdns.Record_EDNS(None, 0), True))
+            return [ret, (), add]
+
+        wildcard = name[name.index("."):]
         if name in self.a_mapping:
             ttl = self.a_mapping[name]['ttl']
-
-            def packResult(value):
-                ret = []
-                add = []
-                for x in value:
-                    ret.append(dns.RRHeader(name, dns.A, dns.IN, ttl, dns.Record_A(x, ttl), True))
-
-                if edns is not None:
-                    if edns.rdlength > 8:
-                        add.append(dns.RRHeader('', sdns.EDNS, 4096, edns.ttl, edns.payload, True))
-                    else:
-                        add.append(dns.RRHeader('', sdns.EDNS, 4096, 0, sdns.Record_EDNS(None, 0), True))
-                return [ret, (), add]
-
             result = self.finder.findIP(str(addr[0]), name)
-            # 返回的IP数组乱序
-            random.shuffle(result)
-            return packResult(result)
+            random.shuffle(result)  # 返回的IP数组乱序
+            return packResult(result, ttl)
+        elif wildcard in self.a_mapping:
+            ttl = self.a_mapping[wildcard]['ttl']
+            result = self.finder.findIP(str(addr[0]), wildcard)
+            random.shuffle(result)  # 返回的IP数组乱序
+            return packResult(result, ttl)
         else:
             return self._lookup(name, dns.IN, dns.A, timeout)
 
