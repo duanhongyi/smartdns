@@ -86,13 +86,13 @@ class MapResolver(client.Resolver):
                     add.append(dns.RRHeader('', sdns.EDNS, 4096, 0, sdns.Record_EDNS(None, 0), True))
             return [ret, (), add]
 
-        wildcard = name[name.index("."):]
+        wildcard = name[name.index("."):] if "." in name else None
         if name in self.a_mapping:
             ttl = self.a_mapping[name]['ttl']
             result = self.finder.findIP(str(addr[0]), name)
             random.shuffle(result)  # 返回的IP数组乱序
             return packResult(result, ttl)
-        elif wildcard in self.a_mapping:
+        elif wildcard is not None and wildcard in self.a_mapping:
             ttl = self.a_mapping[wildcard]['ttl']
             result = self.finder.findIP(str(addr[0]), wildcard)
             random.shuffle(result)  # 返回的IP数组乱序
