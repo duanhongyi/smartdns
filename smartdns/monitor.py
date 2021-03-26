@@ -24,7 +24,7 @@ class Monitor(object):
         self.black_mapping = {}
 
     def _check(self):
-        host = urlparse(self.monitor["url"]).netloc
+        host = urlparse(self.monitor["url"]).netloc.split(":")[0]
         for ip in self.ip_set:
             if ip not in self.black_mapping:
                 self.black_mapping[ip] = 0
