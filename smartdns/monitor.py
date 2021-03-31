@@ -31,23 +31,13 @@ class Monitor(object):
             url = self.monitor['url'].replace(host, ip, 1).encode("utf8")
             agent = Agent(reactor, contextFactory=SmartClientContextFactory(), connectTimeout=30)
             agent.request(b'GET', url, headers=Headers({"host": [host, ]})).addCallbacks(
-                BlackMappingRemover(ip, self.black_mapping), BlackMappingAdder(ip, self.black_mapping))
+                BlackMappingChecker(ip, self.black_mapping), BlackMappingAdder(ip, self.black_mapping))
 
     def check(self, ip):
         return self.black_mapping[ip] < self.monitor["frequency"]
 
     def start(self):
         task.LoopingCall(self._check).start(self.monitor["interval"])
-
-
-class BlackMappingRemover(object):
-
-    def __init__(self, ip, black_mapping):
-        self.ip = ip
-        self.black_mapping = black_mapping
-
-    def __call__(self, *args, **kwargs):
-        self.black_mapping[self.ip] = 0
 
 
 class BlackMappingAdder(object):
@@ -58,6 +48,15 @@ class BlackMappingAdder(object):
 
     def __call__(self, *args, **kwargs):
         self.black_mapping[self.ip] += 1
+
+
+class BlackMappingChecker(BlackMappingAdder):
+
+    def __call__(self, response, *args, **kwargs):
+        if response.code < 500:
+            self.black_mapping[self.ip] = 0
+        else:
+            BlackMappingAdder.__call__(self, *args, **kwargs)
 
 
 class MonitorMapping(object):
