@@ -1,7 +1,9 @@
+from functools import partial
 from twisted.internet import task, ssl, reactor
-from twisted.web.client import Agent, BrowserLikePolicyForHTTPS
+from twisted.web.client import readBody, Agent, ResponseFailed, BrowserLikePolicyForHTTPS
 from twisted.web.http_headers import Headers
 from twisted.web.iweb import IPolicyForHTTPS
+from twisted.internet.error import TimeoutError
 from urllib.parse import urlparse
 from zope.interface import implementer
 
@@ -23,21 +25,22 @@ class Monitor(object):
         self.monitor = monitor
         self.black_mapping = {}
 
-    def _check(self):
-        host = urlparse(self.monitor["url"]).netloc.split(":")[0]
-        for ip in self.ip_set:
-            if ip not in self.black_mapping:
-                self.black_mapping[ip] = 0
-            url = self.monitor['url'].replace(host, ip, 1).encode("utf8")
-            agent = Agent(reactor, contextFactory=SmartClientContextFactory(), connectTimeout=30)
-            agent.request(b'GET', url, headers=Headers({"host": [host, ]})).addCallbacks(
-                BlackMappingChecker(ip, self.black_mapping), BlackMappingAdder(ip, self.black_mapping))
+    def _check(self, host, ip):
+        url = self.monitor['url'].replace(host, ip, 1).encode("utf8")
+        agent = Agent(reactor, contextFactory=SmartClientContextFactory(), connectTimeout=30)
+        agent.request(b'GET', url, headers=Headers({"host": [host, ]})).addCallbacks(
+            BlackMappingChecker(
+                ip, self.black_mapping), BlackMappingAdder(ip, self.black_mapping))
 
     def check(self, ip):
         return self.black_mapping[ip] < self.monitor["frequency"]
 
     def start(self):
-        task.LoopingCall(self._check).start(self.monitor["interval"])
+        host = urlparse(self.monitor["url"]).netloc.split(":")[0]
+        for ip in self.ip_set:
+            self.black_mapping[ip] = 0
+            task.LoopingCall(partial(self._check, host=host, ip=ip)).start(
+                self.monitor["interval"])
 
 
 class BlackMappingAdder(object):
@@ -46,17 +49,25 @@ class BlackMappingAdder(object):
         self.ip = ip
         self.black_mapping = black_mapping
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, failure):
         self.black_mapping[self.ip] += 1
+        failure.trap(ResponseFailed, TimeoutError)
 
 
-class BlackMappingChecker(BlackMappingAdder):
+class BlackMappingChecker(object):
 
-    def __call__(self, response, *args, **kwargs):
+    def __init__(self, ip, black_mapping):
+        self.ip = ip
+        self.black_mapping = black_mapping
+
+    def __call__(self, response):
         if response.code < 500:
             self.black_mapping[self.ip] = 0
         else:
-            BlackMappingAdder.__call__(self, *args, **kwargs)
+            self.black_mapping[self.ip] += 1
+        finished = readBody(response)
+        finished.addCallback(lambda body: None)  # ignore
+        return finished
 
 
 class MonitorMapping(object):
