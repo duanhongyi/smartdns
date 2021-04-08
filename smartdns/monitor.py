@@ -3,7 +3,7 @@ from twisted.internet import task, ssl, reactor
 from twisted.web.client import readBody, Agent, ResponseFailed, BrowserLikePolicyForHTTPS
 from twisted.web.http_headers import Headers
 from twisted.web.iweb import IPolicyForHTTPS
-from twisted.internet.error import TimeoutError
+from twisted.internet.error import TimeoutError, ConnectError, TCPTimedOutError
 from urllib.parse import urlparse
 from zope.interface import implementer
 
@@ -51,7 +51,7 @@ class BlackMappingAdder(object):
 
     def __call__(self, failure):
         self.black_mapping[self.ip] += 1
-        failure.trap(ResponseFailed, TimeoutError)
+        failure.trap(ResponseFailed, TimeoutError, ConnectError, TCPTimedOutError)
 
 
 class BlackMappingChecker(object):
