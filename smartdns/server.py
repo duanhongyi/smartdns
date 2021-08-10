@@ -214,14 +214,18 @@ class SmartDNSFactory(server.DNSServerFactory):
             self.gotResolverError, protocol, message, address
         )
 
-    def __init__(self, authorities=None, clients=None, verbose=0):
+    def __init__(self, authorities=None, caches=None, clients=None, verbose=0):
         resolvers = []
         if authorities is not None:
             resolvers.extend(authorities)
+        if caches is not None:
+            resolvers.extend(caches)
         if clients is not None:
             resolvers.extend(clients)
 
         self.canRecurse = not not clients
         self.resolver = SmartResolverChain(resolvers)
         self.verbose = verbose
+        if caches:
+            self.cache = caches[-1]
         self.connections = []
