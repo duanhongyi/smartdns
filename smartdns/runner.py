@@ -10,7 +10,7 @@ import yaml
 from multiprocessing import cpu_count, Process
 from os.path import isfile
 from twisted.internet import reactor
-from twisted.names import dns, cache
+from twisted.names import dns
 
 from . import server, monitor
 from .finder import Finder
@@ -57,7 +57,6 @@ def prepare_run(run_env):
     for listen_tcp in conf['listen']['tcp']:
         listen_tcp_ip, listen_tcp_port = listen_tcp.split(":")
         f = server.SmartDNSFactory(
-            caches=[cache.CacheResolver()],
             clients=[server.MapResolver(
                 finder, a_mapping, ns_mapping, soa_mapping, servers=dns_forwards
             )]
@@ -66,9 +65,10 @@ def prepare_run(run_env):
         run_env['tcp'].append([int(listen_tcp_port), f, listen_tcp_ip])
     for listen_udp in conf['listen']['tcp']:
         listen_udp_ip, listen_udp_port = listen_udp.split(":")
-        p = dns.DNSDatagramProtocol(server.SmartDNSFactory(clients=[
-            server.MapResolver(
-                finder, a_mapping, ns_mapping, soa_mapping, servers=dns_forwards)]))
+        p = dns.DNSDatagramProtocol(server.SmartDNSFactory(
+            clients=[server.MapResolver(
+                finder, a_mapping, ns_mapping, soa_mapping, servers=dns_forwards)]
+        ))
         p.noisy = False
         run_env['udp'].append([int(listen_udp_port), p, listen_udp_ip])
     return conf
