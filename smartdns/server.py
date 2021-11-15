@@ -2,6 +2,7 @@
 import logging
 import random
 import re
+import time
 from twisted.internet import defer
 from twisted.names import dns, server, client, common, resolve
 from twisted.python import failure
@@ -56,11 +57,32 @@ class FailureHandler:
 
 class MapResolver(client.Resolver):
     def __init__(self, finder, a_mapping, ns_mapping, soa_mapping, servers):
+        self.cache = {}
         self.finder = finder
         self.a_mapping = a_mapping
         self.ns_mapping = ns_mapping
         self.soa_mapping = soa_mapping
         client.Resolver.__init__(self, servers=servers)
+
+    def _lookup(self, name, cls, type, timeout):
+        q = dns.Query(name, type, cls)
+
+        def set_result(result):
+            ttl = result[0][0].ttl
+            self.cache[q] = (result, time.time() + ttl)
+            return result
+
+        def get_result(q):
+            if q in self.cache:
+                result, expire = self.cache[q]
+                if expire < time.time():
+                    client.Resolver._lookup(
+                        self, name, cls, type, timeout).addCallback(set_result)
+                return result
+            else:
+                return client.Resolver._lookup(
+                    self, name, cls, type, timeout).addCallback(set_result)
+        return get_result(q)
 
     def query(self, query, timeout=None, addr=None, edns=None):
         try:
@@ -214,18 +236,13 @@ class SmartDNSFactory(server.DNSServerFactory):
             self.gotResolverError, protocol, message, address
         )
 
-    def __init__(self, authorities=None, caches=None, clients=None, verbose=0):
+    def __init__(self, authorities=None, clients=None, verbose=0):
         resolvers = []
         if authorities is not None:
             resolvers.extend(authorities)
-        if caches is not None:
-            resolvers.extend(caches)
         if clients is not None:
             resolvers.extend(clients)
-
         self.canRecurse = not not clients
         self.resolver = SmartResolverChain(resolvers)
         self.verbose = verbose
-        if caches:
-            self.cache = caches[-1]
         self.connections = []
