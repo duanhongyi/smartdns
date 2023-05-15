@@ -197,12 +197,10 @@ class BaseFinder(object):
                     if not re.search(r'[^0-9.]', tmp_ip)]
                 logger.info("userip:[%s] domain:[%s] section:[%s-%s] location:[%s,%s,%s,%s] ip_list:%s" % (
                     ip, name, long2ip(ipstart), long2ip(ipend), country, province, city, sp, ip_list))
-        if not ip_list or len(ip_list) == 0:
-            # maybe something wrong
-            ip_list = [
-                tmp_ip for tmp_ip in re.split(r',|\s+', self.record[name]['default'])
-                if not re.search(r'[^0-9.]', tmp_ip)]
-        return ip_list
+        default_ip_list = [
+            tmp_ip for tmp_ip in re.split(r',|\s+', self.record[name]['default'])
+            if not re.search(r'[^0-9.]', tmp_ip)]
+        return default_ip_list, ip_list
 
 
 class Finder(object):
@@ -212,10 +210,10 @@ class Finder(object):
         self.finder = BaseFinder(ipfile, recordfile)
 
     def findIP(self, ip, name):
-        tmp_ip_list = self.finder.findIP(ip, name)
+        default_ip_list, tmp_ip_list = self.finder.findIP(ip, name)
         ip_list = [
             tmp_ip for tmp_ip in tmp_ip_list if self.monitor_mapping.check(name, tmp_ip)]
         if len(ip_list) == 0:
             logger.warning("no available ip for %s, use default ip" % name)
-            return tmp_ip_list
+            return default_ip_list
         return ip_list
