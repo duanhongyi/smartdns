@@ -183,7 +183,7 @@ class BaseFinder(object):
     @lru_cache(maxsize=2048 * 2048, typed=True)
     def findIP(self, ip, name):
         i, _, ipnum = self.searchLocation(ip)
-        ip_list = None
+        ip_list = []
         if i in self.iphash:
             ipstart = self.iphash[i][0]
             ipend = self.iphash[i][1]
@@ -209,11 +209,19 @@ class Finder(object):
         self.monitor_mapping = monitor_mapping
         self.finder = BaseFinder(ipfile, recordfile)
 
+    def get_available_ip(self, name, ip_list):
+        return [
+            tmp_ip for tmp_ip in ip_list if self.monitor_mapping.check(name, tmp_ip)
+        ]
+
     def findIP(self, ip, name):
-        default_ip_list, tmp_ip_list = self.finder.findIP(ip, name)
-        ip_list = [
-            tmp_ip for tmp_ip in tmp_ip_list if self.monitor_mapping.check(name, tmp_ip)]
-        if len(ip_list) == 0:
+        default_ip_list, ip_list = self.finder.findIP(ip, name)
+        available_ip_list = self.get_available_ip(name, ip_list)
+        available_default_ip_list = self.get_available_ip(name, default_ip_list)
+        if len(available_ip_list) == 0 and len(available_default_ip_list) == 0:
+            logger.warning("no available ip for %s, use no available ip" % name)
+            return ip_list
+        elif len(available_ip_list) == 0:
             logger.warning("no available ip for %s, use default ip" % name)
-            return default_ip_list
-        return ip_list
+            return available_default_ip_list
+        return available_ip_list
