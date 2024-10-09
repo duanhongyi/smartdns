@@ -219,7 +219,7 @@ class SmartDNSFactory(server.DNSServerFactory):
         query = message.queries[0]
         edns = None
         cliAddr = address
-        if query.type == 43 or typeToMethod[query.type] == 'lookupAllRecords':
+        if query.type == 43 or query.type not in typeToMethod or typeToMethod[query.type] == 'lookupAllRecords':
             return [(), (), ()]
         if isinstance(protocol, dns.DNSProtocol):
             cliAddr = protocol.transport.client
